@@ -5,6 +5,7 @@ import ProjectStatus from './components/ProjectStatus';
 import { CANON_DATA, PROPOSED_ACTIONS } from './constants';
 import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Mock data for the "Chronos Viewer" chart visualization
 const CHRONOS_DATA = Array.from({ length: 50 }, (_, i) => ({
@@ -191,6 +192,7 @@ const App: React.FC = () => {
         </main>
       </div>
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 };

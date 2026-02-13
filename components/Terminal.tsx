@@ -63,7 +63,7 @@ const Terminal: React.FC<TerminalProps> = ({ onComplete }) => {
         ))}
         {isComplete && (
             <div className="mt-8 text-xs text-zinc-600 animate-pulse">
-                > PRESSING ON TO DAY 2...
+                {'> PRESSING ON TO DAY 2...'}
             </div>
         )}
         <div ref={bottomRef} />
