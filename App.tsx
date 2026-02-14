@@ -1,21 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Terminal from './components/Terminal';
 import ActionCard from './components/ActionCard';
 import ProjectStatus from './components/ProjectStatus';
+import ChronosViewer from './components/ChronosViewer';
+import ProjectModal from './components/ProjectModal';
 import { CANON_DATA, PROPOSED_ACTIONS } from './constants';
-import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, CartesianGrid } from 'recharts';
 import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/react';
-
-// Mock data for the "Chronos Viewer" chart visualization
-const CHRONOS_DATA = Array.from({ length: 50 }, (_, i) => ({
-  time: i,
-  entropy: Math.sin(i * 0.2) * 40 + 50 + (Math.random() * 10),
-  coalescence: Math.cos(i * 0.2) * 30 + 60
-}));
+import { ProjectDetails } from './types';
 
 const App: React.FC = () => {
   const [bootComplete, setBootComplete] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{d: number, h: number, m: number, s: number} | null>(null);
+  const [selectedProject, setSelectedProject] = useState<{name: string, data: ProjectDetails} | null>(null);
+
+  useEffect(() => {
+    const target = new Date(CANON_DATA.mission_vector.target_date).getTime();
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const distance = target - now;
+
+      if (distance < 0) {
+        setTimeLeft(null);
+      } else {
+        setTimeLeft({
+          d: Math.floor(distance / (1000 * 60 * 60 * 24)),
+          h: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          m: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+          s: Math.floor((distance % (1000 * 60)) / 1000)
+        });
+      }
+    };
+
+    const timer = setInterval(updateTimer, 1000);
+    updateTimer(); // Initial call
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-200 selection:bg-emerald-500/30">
@@ -59,28 +80,78 @@ const App: React.FC = () => {
           {/* Mission Status Section */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Primary Vector */}
-            <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
-               <div className="absolute top-0 right-0 p-6 opacity-5">
-                 <svg className="w-32 h-32 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.75 9.5 9.75 12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+            <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 relative overflow-hidden flex flex-col justify-between group">
+               <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity duration-500">
+                 <svg className="w-48 h-48 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.75 9.5 9.75 12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
                </div>
-               <div className="relative z-10">
-                 <span className="text-xs font-mono text-emerald-500 mb-2 block">PRIMARY OBJECTIVE</span>
-                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{CANON_DATA.mission_vector.primary_objective.split('—')[0]}</h2>
-                 <p className="text-zinc-400 max-w-xl text-sm leading-relaxed mb-6">
-                   {CANON_DATA.mission_vector.primary_objective.split('—')[1]}
-                 </p>
-                 <div className="flex flex-wrap gap-4 text-xs font-mono">
-                   <div className="px-3 py-1.5 bg-black/50 rounded border border-zinc-700">
-                     TARGET: <span className="text-zinc-200">{CANON_DATA.mission_vector.target_date}</span>
-                   </div>
-                   <div className="px-3 py-1.5 bg-black/50 rounded border border-zinc-700">
-                     STATUS: <span className="text-red-400">{CANON_DATA.mission_vector.status}</span>
-                   </div>
+               
+               <div className="relative z-10 mb-6">
+                 <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-mono text-emerald-500 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span>
+                        PRIMARY OBJECTIVE
+                    </span>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-widest uppercase flex items-center gap-2 border ${
+                        CANON_DATA.mission_vector.status.includes('Locked') 
+                        ? 'bg-red-500/10 border-red-500/30 text-red-400' 
+                        : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    }`}>
+                        {CANON_DATA.mission_vector.status.includes('Locked') && (
+                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                        )}
+                        {CANON_DATA.mission_vector.status}
+                    </span>
+                 </div>
+                 
+                 <div className="space-y-4">
+                    <div>
+                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{CANON_DATA.mission_vector.primary_objective.split('—')[0]}</h2>
+                        <p className="text-zinc-400 max-w-xl text-sm leading-relaxed">
+                          {CANON_DATA.mission_vector.primary_objective.split('—')[1]}
+                        </p>
+                    </div>
+                    
+                    <div className="border-l-2 border-zinc-800 pl-4 py-1">
+                        <span className="text-[10px] font-mono text-zinc-500 block mb-1">STRATEGIC_VECTOR</span>
+                        <p className="text-xs text-zinc-400 italic">
+                            {CANON_DATA.mission_vector.strategic_goal}
+                        </p>
+                    </div>
+                 </div>
+               </div>
+
+               {/* Countdown Interface */}
+               <div className="relative z-10 bg-black/40 border border-zinc-700/50 rounded-lg p-4 backdrop-blur-sm">
+                 <div className="grid grid-cols-4 divide-x divide-zinc-700/50">
+                    <div className="text-center px-2">
+                        <div className="text-2xl md:text-3xl font-mono font-bold text-white tabular-nums">{timeLeft?.d || 0}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono tracking-widest">DAYS</div>
+                    </div>
+                    <div className="text-center px-2">
+                        <div className="text-2xl md:text-3xl font-mono font-bold text-white tabular-nums">{timeLeft?.h || 0}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono tracking-widest">HOURS</div>
+                    </div>
+                    <div className="text-center px-2">
+                        <div className="text-2xl md:text-3xl font-mono font-bold text-white tabular-nums">{timeLeft?.m || 0}</div>
+                        <div className="text-[10px] text-zinc-500 font-mono tracking-widest">MINS</div>
+                    </div>
+                    <div className="text-center px-2">
+                        <div className="text-2xl md:text-3xl font-mono font-bold text-emerald-400 tabular-nums">{timeLeft?.s || 0}</div>
+                        <div className="text-[10px] text-emerald-500/50 font-mono tracking-widest">SECS</div>
+                    </div>
+                 </div>
+                 <div className="mt-3 flex justify-between items-center border-t border-zinc-700/50 pt-3">
+                     <div className="text-xs font-mono text-zinc-400">
+                        TARGET: <span className="text-white">{CANON_DATA.mission_vector.target_date}</span>
+                     </div>
+                     <div className="text-xs font-mono text-zinc-500">
+                        LOCATION: UTOPIA PLANITIA
+                     </div>
                  </div>
                </div>
             </div>
 
-            {/* Philosophy Axiom - Randomly selected or rotating could be nice, sticking to 0.1 for display */}
+            {/* Philosophy Axiom */}
             <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 flex flex-col justify-center relative">
                <span className="text-6xl font-black text-zinc-800 absolute top-4 right-6 select-none">0.1</span>
                <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest mb-3">Axiom 0.1 // Fluctuation</h3>
@@ -118,51 +189,25 @@ const App: React.FC = () => {
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-4">
-                 <h2 className="text-lg font-bold text-zinc-200">CHRONOS VIEWER // <span className="text-emerald-500">LIVE FEED</span></h2>
+                 <h2 className="text-lg font-bold text-zinc-200">CHRONOS VIEWER // <span className="text-emerald-500">ACTIVE FEED</span></h2>
                  <span className="text-xs font-mono text-zinc-600">PHONON_TAX_ESTIMATE</span>
               </div>
-              <div className="h-64 bg-black/50 border border-zinc-800 rounded-xl overflow-hidden p-2">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={CHRONOS_DATA}>
-                      <defs>
-                        <linearGradient id="colorEntropy" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
-                      <XAxis dataKey="time" hide />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', fontSize: '12px' }} 
-                        itemStyle={{ color: '#e4e4e7' }}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="entropy" 
-                        stroke="#10b981" 
-                        fillOpacity={1} 
-                        fill="url(#colorEntropy)" 
-                        strokeWidth={2}
-                      />
-                      <Area 
-                         type="monotone" 
-                         dataKey="coalescence" 
-                         stroke="#f59e0b" 
-                         fill="none" 
-                         strokeDasharray="5 5"
-                         strokeWidth={2}
-                      />
-                    </AreaChart>
-                 </ResponsiveContainer>
+              <div className="h-72 md:h-80 w-full">
+                 <ChronosViewer />
               </div>
             </div>
 
             {/* Project Stack */}
             <div className="space-y-4">
                <h2 className="text-lg font-bold text-zinc-200 mb-4">ACTIVE PROJECTS</h2>
-               <div className="space-y-3 h-64 overflow-y-auto pr-2 custom-scrollbar">
+               <div className="space-y-3 h-72 md:h-80 overflow-y-auto pr-2 custom-scrollbar">
                   {Object.entries(CANON_DATA.projects).map(([key, data]) => (
-                    <ProjectStatus key={key} name={key} data={data} />
+                    <ProjectStatus 
+                      key={key} 
+                      name={key} 
+                      data={data} 
+                      onClick={() => setSelectedProject({name: key, data})} 
+                    />
                   ))}
                </div>
             </div>
@@ -191,8 +236,17 @@ const App: React.FC = () => {
           </footer>
         </main>
       </div>
+
+      {/* Project Detail Modal */}
+      {selectedProject && (
+        <ProjectModal 
+            name={selectedProject.name} 
+            data={selectedProject.data} 
+            onClose={() => setSelectedProject(null)} 
+        />
+      )}
+      
       <Analytics />
-      <SpeedInsights />
     </div>
   );
 };
