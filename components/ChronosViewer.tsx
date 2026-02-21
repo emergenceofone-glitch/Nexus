@@ -275,7 +275,12 @@ const ChronosViewer: React.FC = () => {
         ${showControls ? 'translate-y-0' : 'translate-y-[calc(100%-4px)]'}
       `}>
           {/* Handle bar for mobile hint */}
-          <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mb-4 opacity-50" />
+          <div 
+            onClick={() => setShowControls(!showControls)}
+            className="w-full h-6 -mt-4 mb-2 flex items-center justify-center cursor-pointer hover:bg-white/5 transition-colors"
+          >
+             <div className="w-12 h-1 bg-zinc-700 rounded-full opacity-50" />
+          </div>
           
           <div className="grid grid-cols-4 gap-4 items-end">
              {/* Calibration Sliders */}
