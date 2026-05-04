@@ -6,6 +6,7 @@ import ChronosViewer from './components/ChronosViewer';
 import ProjectModal from './components/ProjectModal';
 import { CANON_DATA, PROPOSED_ACTIONS } from './constants';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { ProjectDetails } from './types';
 
 const App: React.FC = () => {
@@ -247,6 +248,7 @@ const App: React.FC = () => {
       )}
       
       <Analytics />
+      <SpeedInsights />
     </div>
   );
 };
