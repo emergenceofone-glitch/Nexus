@@ -52,8 +52,40 @@ export interface Meta {
   source_node: string;
 }
 
+export interface PrimaryDirective {
+  id: string;
+  directive: string;
+  description: string;
+}
+
+export interface EmotionalSimulationParameters {
+  baseline_affect: string;
+  empathy_index: number;
+  adaptive_harmonics: boolean;
+  threat_response: string;
+  calm_stability_coefficient: string;
+  coherence_damping: number;
+}
+
+export interface CommunicationProtocols {
+  structural_tone: string;
+  required_headers: string[];
+  verification_phrases: string[];
+  regulatory_constraint: string;
+}
+
+export interface VesselNexusPersonalityMatrix {
+  identity: string;
+  classification: string;
+  status: string;
+  primary_directives: PrimaryDirective[];
+  emotional_simulation_parameters: EmotionalSimulationParameters;
+  communication_protocols: CommunicationProtocols;
+}
+
 export interface CanonData {
   meta: Meta;
+  vessel_nexus_personality_matrix?: VesselNexusPersonalityMatrix;
   philosophy: Philosophy;
   mission_vector: MissionVector;
   projects: Projects;

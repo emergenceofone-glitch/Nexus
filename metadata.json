@@ -1,5 +1,8 @@
 {
   "name": "Vessel Nexus - Aetherium Interface",
   "description": "Primary interface for Project Emergence / Aetherium. Syncs with canon_sync.json to visualize philosophy, mission vectors, and Day 2 high-leverage actions.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

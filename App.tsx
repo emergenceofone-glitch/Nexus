@@ -7,7 +7,11 @@ import ProjectModal from './components/ProjectModal';
 import { CANON_DATA, PROPOSED_ACTIONS } from './constants';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
+import { AnimatePresence } from 'motion/react';
 import { ProjectDetails } from './types';
+
+import PhilosophyVisualizer from './components/PhilosophyVisualizer';
+import PersonalityMatrix from './components/PersonalityMatrix';
 
 const App: React.FC = () => {
   const [bootComplete, setBootComplete] = useState(false);
@@ -152,19 +156,66 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            {/* Philosophy Axiom */}
-            <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 flex flex-col justify-center relative">
-               <span className="text-6xl font-black text-zinc-800 absolute top-4 right-6 select-none">0.1</span>
-               <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest mb-3">Axiom 0.1 // Fluctuation</h3>
-               <p className="text-zinc-400 text-sm italic leading-relaxed">
-                 "{CANON_DATA.philosophy.axioms["0.1"]}"
-               </p>
-               <div className="mt-4 pt-4 border-t border-zinc-800">
-                 <p className="text-xs font-mono text-zinc-500">
-                    EQ: {CANON_DATA.philosophy.equation}
-                 </p>
+            {/* System Parameters */}
+            <div className="bg-zinc-900/40 border border-zinc-800 rounded-xl p-6 flex flex-col justify-between relative group overflow-hidden">
+               <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl group-hover:bg-emerald-500/10 transition-colors" />
+               
+               <div>
+                  <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    SYSTEM_PARAMS
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase block mb-1">Active Nodes</span>
+                        <div className="flex flex-wrap gap-2">
+                            {CANON_DATA.active_nodes.map(node => (
+                                <span key={node} className="px-2 py-0.5 bg-zinc-800/50 border border-zinc-700 rounded text-[10px] font-mono text-zinc-300">
+                                    {node}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase block mb-1">Core Construct</span>
+                        <p className="text-xs text-emerald-400 font-mono font-bold">{CANON_DATA.philosophy.core_construct}</p>
+                    </div>
+
+                    <div>
+                        <span className="text-[10px] font-mono text-zinc-500 uppercase block mb-1">Current Law</span>
+                        <p className="text-xs text-zinc-300 font-mono italic">{CANON_DATA.philosophy.current_law}</p>
+                    </div>
+                  </div>
+               </div>
+
+               <div className="mt-6 pt-4 border-t border-zinc-800/50">
+                 <div className="flex items-center justify-between text-[10px] font-mono">
+                    <span className="text-zinc-600 uppercase">Version</span>
+                    <span className="text-zinc-400">{CANON_DATA.meta.version}</span>
+                 </div>
                </div>
             </div>
+          </section>
+
+          {/* Philosophy Section */}
+          <section>
+             <div className="flex items-center justify-between mb-6">
+               <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                 <span className="w-1.5 h-6 bg-emerald-500 rounded-sm"></span>
+                 AXIOMATIC PHILOSOPHY
+               </h2>
+               <span className="text-xs font-mono text-zinc-500 hidden sm:block">
+                  {CANON_DATA.philosophy.equation} // BEYOND SYMMETRY
+               </span>
+             </div>
+             <PhilosophyVisualizer />
+          </section>
+
+          {/* Core Personality Matrix */}
+          <section>
+             <PersonalityMatrix />
           </section>
 
           {/* High Leverage Actions */}
@@ -239,13 +290,15 @@ const App: React.FC = () => {
       </div>
 
       {/* Project Detail Modal */}
-      {selectedProject && (
-        <ProjectModal 
-            name={selectedProject.name} 
-            data={selectedProject.data} 
-            onClose={() => setSelectedProject(null)} 
-        />
-      )}
+      <AnimatePresence>
+        {selectedProject && (
+          <ProjectModal 
+              name={selectedProject.name} 
+              data={selectedProject.data} 
+              onClose={() => setSelectedProject(null)} 
+          />
+        )}
+      </AnimatePresence>
       
       <Analytics />
       <SpeedInsights />

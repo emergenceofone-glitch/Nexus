@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 
 const ChronosViewer: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -9,6 +10,25 @@ const ChronosViewer: React.FC = () => {
   const [frequency, setFrequency] = useState(45);
   const [amplitude, setAmplitude] = useState(60);
   const [showControls, setShowControls] = useState(false);
+
+  // Dynamic HUD noise state
+  const [hudData, setHudData] = useState({
+    freq: 400 + frequency * 2.5,
+    tax: (100 - resonance) * 0.42,
+    coherence: resonance
+  });
+
+  // HUD Update Loop (Jitter effect)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHudData(prev => ({
+        freq: (400 + frequency * 2.5) + (Math.sin(Date.now() / 200) * (resonance < 50 ? 2 : 0.2)),
+        tax: ((100 - resonance) * 0.42) + (Math.sin(Date.now() / 150) * 0.005),
+        coherence: resonance + (Math.sin(Date.now() / 100) * (resonance < 30 ? 1 : 0))
+      }));
+    }, 50); // Faster update but smooth sine jitter
+    return () => clearInterval(interval);
+  }, [frequency, resonance]);
 
   // Refs for animation loop access
   const paramsRef = useRef({ resonance, frequency, amplitude });
@@ -138,15 +158,24 @@ const ChronosViewer: React.FC = () => {
         let py = p.oy * breathe + (Math.random() - 0.5) * jitterAmount;
         let pz = p.oz * breathe + (Math.random() - 0.5) * jitterAmount;
 
-        // Apply Ripple displacement
+        // Apply Ripple displacement (Expanding Sphere)
         if (rippleForce > 0) {
-            const dist = Math.abs((py + 100) - rippleRadius); 
-            if (dist < 50) {
-                const impact = (1 - dist/50) * 30 * rippleForce;
-                const scaleExp = 1 + impact * 0.015;
-                px *= scaleExp;
-                py *= scaleExp;
-                pz *= scaleExp;
+            const distFromOrigin = Math.sqrt(px*px + py*py + pz*pz);
+            const dist = Math.abs(distFromOrigin - rippleRadius); 
+            if (dist < 60) {
+                const impact = (1 - dist/60) * rippleForce;
+                // Displace along the vector from origin
+                const push = 1 + (impact * 0.4 * (amp / 100)); 
+                px *= push;
+                py *= push;
+                pz *= push;
+                
+                // Add some chaotic jitter if resonance is low
+                if (res < 50) {
+                    px += (Math.random() - 0.5) * impact * 10;
+                    py += (Math.random() - 0.5) * impact * 10;
+                    pz += (Math.random() - 0.5) * impact * 10;
+                }
             }
         }
 
@@ -208,8 +237,11 @@ const ChronosViewer: React.FC = () => {
         const val = buffer[i];
         const x = i * step;
         
-        // Add ripple disturbance to wave
-        const rippleDisturbance = rippleForce > 0 ? Math.sin(x * 0.1 - time * 20) * 50 * rippleForce : 0;
+        // Add ripple disturbance to wave based on system state
+        const ripplePhase = x * (0.05 + freq/1000) - time * (15 + res/5);
+        const rippleDisturbance = rippleForce > 0 
+            ? Math.sin(ripplePhase) * (amp * 0.6) * rippleForce 
+            : 0;
 
         const y = waveY + (val * 40) + rippleDisturbance;
           
@@ -254,17 +286,59 @@ const ChronosViewer: React.FC = () => {
       <canvas ref={canvasRef} className="block w-full h-full" />
       
       {/* HUD Info */}
-      <div className="absolute top-3 left-3 flex flex-col gap-1 pointer-events-none transition-opacity duration-300 group-hover:opacity-50">
+      <div className="absolute top-3 left-3 flex flex-col gap-1 pointer-events-none transition-opacity duration-300 group-hover:opacity-100 opacity-60">
         <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${resonance < 50 ? 'bg-red-500 animate-ping' : 'bg-emerald-500 animate-pulse'} shadow-[0_0_5px_currentColor]`} />
+            <motion.div 
+              animate={{ 
+                scale: resonance < 50 ? [1, 1.5, 1] : 1,
+                opacity: resonance < 50 ? [1, 0.5, 1] : [1, 0.8, 1]
+              }}
+              transition={{ duration: resonance < 50 ? 0.5 : 2, repeat: Infinity }}
+              className={`w-2 h-2 rounded-full ${resonance < 50 ? 'bg-red-500' : 'bg-emerald-500'} shadow-[0_0_5px_currentColor]`} 
+            />
             <span className={`text-[10px] font-mono font-bold tracking-widest ${resonance < 50 ? 'text-red-400' : 'text-emerald-400'}`}>
-                LIVE_FEED :: {resonance < 50 ? 'UNSTABLE' : 'LOCKED'}
+                LIVE_FEED :: {resonance < 50 ? 'UNSTABLE_PHASE' : 'LOCKED_COHERENCE'}
             </span>
         </div>
-        <div className="flex flex-col text-[9px] font-mono text-zinc-600 pl-4">
-            <span>OSC_1: {(400 + frequency * 2.5).toFixed(1)}Hz</span>
-            <span>PHONON_TAX: {((100 - resonance) * 0.42).toFixed(3)}μV</span>
-            <span>COHERENCE: {resonance}%</span>
+        <div className="flex flex-col text-[9px] font-mono text-zinc-500 pl-4 space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-600">OSC_1:</span>
+              <span className="text-zinc-300 tabular-nums">
+                {hudData.freq.toFixed(2)}Hz
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-600">PHONON_TAX:</span>
+              <motion.span 
+                 animate={{ 
+                    color: resonance < 30 ? '#ef4444' : '#a1a1aa',
+                    opacity: resonance < 30 ? [1, 0.5, 1] : 1
+                 }}
+                 transition={{ duration: 0.5, repeat: resonance < 30 ? Infinity : 0 }}
+                 className="tabular-nums font-bold"
+              >
+                {hudData.tax.toFixed(4)}μV
+              </motion.span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-zinc-600">COHERENCE:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-1 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                   <motion.div 
+                      initial={false}
+                      animate={{ 
+                        width: `${resonance}%`,
+                        backgroundColor: resonance < 50 ? '#ef4444' : '#10b981'
+                      }}
+                      transition={{ type: "spring", bounce: 0, duration: 0.8 }}
+                      className="h-full"
+                   />
+                </div>
+                <span className="tabular-nums text-zinc-400 min-w-[35px]">{hudData.coherence.toFixed(1)}%</span>
+              </div>
+            </div>
         </div>
       </div>
 
